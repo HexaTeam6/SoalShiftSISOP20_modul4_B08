@@ -16,7 +16,7 @@ char cipher[] = "9(ku@AW1[Lmvgax6q`5Y2Ry?+sF!^HKQiBXCUSe&0M.b%rI'7d)o4~VfZ*{#:}E
 
 void encrypt(char *x) 
 {
-	int len = strlen(x), start = 0;
+	int xlength = strlen(x), xbegin = 0;
 	int i;
 	for(i = strlen(x); i >= 0; i--) {
 		if(x[i] == '/') {
@@ -24,20 +24,20 @@ void encrypt(char *x)
 		}
 
 		if(x[i] == '.') {
-			len = i - 1;
+			xlength = i - 1;
 		}
 	}
 
-	for (int i = 1; i < len; i++)
+	for (int i = 1; i < xlength; i++)
 	{
 		if(x[i] == '/') {
-			start = i;
+			xbegin = i;
 		}
 	}
 	
 	int ind;
 	char *ptr;
-	for(i = start ; i < len; i++) {
+	for(i = xbegin ; i < xlength; i++) {
 		if(x[i] == '/') {
 			continue;
 		}
@@ -58,13 +58,13 @@ void decrypt(char *y)
 {
 	// printf("sebelum %s\n", y);
 
-	int len = strlen(y), start = 0;
+	int ylength = strlen(y), ybegin = 0;
 	int i;
 	
-	for (int i = 1; i < len; i++)
+	for (int i = 1; i < ylength; i++)
 	{
 		if(y[i] == '/' || y[i+1] == '\0') {
-			start = i + 1;
+			ybegin = i + 1;
 			break;
 		}
 	}
@@ -75,18 +75,18 @@ void decrypt(char *y)
 			break;
 		}
 		if(y[i] == '.' && i == (strlen(y)-1)) {
-			len = strlen(y);
+			ylength = strlen(y);
 			break;
 		}
 		if(y[i] == '.' && i != (strlen(y)-1)) {
-			len = i - 1;
+			ylength = i - 1;
 			break;
 		}
 	}
 
 	int ind;
 	char *ptr;
-	for(i = start ; i < len; i++) {
+	for(i = ybegin ; i < ylength; i++) {
 		if(y[i] == '/') {
 			continue;
 		}
