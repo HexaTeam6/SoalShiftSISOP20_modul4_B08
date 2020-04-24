@@ -10,7 +10,6 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #define SEGMENT 1024 //approximate target size of small file
-char onlyPath[255] = "";
 
 void logs(int level, char* cmd, char* desc1, char* temp){
     char data[1000];
@@ -35,16 +34,13 @@ void logs(int level, char* cmd, char* desc1, char* temp){
     fclose(fPtr);
 }
 
-void getPath(char *path, char *files){
-	char str[255];
-    strcpy(str, path);
-    char delim[] = "/";
-
-	char *ptr = strtok(str, delim);
-	while(strcmp(ptr, files))
-	{
-		sprintf(onlyPath, "%s/%s", onlyPath, ptr);
-		ptr = strtok(NULL, delim);
+void getPath(char *path, char *files, char temp[]){
+    char string[1000] = "";
+    strcpy(string, path);
+    char * token = strtok(string, "/");
+    while(strcmp(token, files)) {
+        sprintf( temp, "%s/%s", temp, token);
+        token = strtok(NULL, "/");
     }
 }
 
@@ -58,6 +54,83 @@ char *getName(char* myStr) {
     if (lastExt != NULL)
         *lastExt = '\0';
     return retStr;
+}
+
+void combineFile(char *path){
+
+    char temp[1000]="";
+    char *files = rindex(path, '/');
+    char *ext = rindex(files+1, '.');
+    ext++;
+    char *name = getName(files+1);
+    char newFile[1000]="";
+    getPath(path, files+1, temp);
+
+    sprintf(newFile, "%s/%s", temp, name);
+    // printf("%s\n", newFile);
+
+    // if(strstr(path, newFile) != NULL && strcmp(path, newFile)){
+    //     char partFile[1000]="";
+    //     sprintf(partFile, "%s", strstr(path, newFile));
+    //     printf("%s\n", partFile); 
+    // }
+
+    int count=4;
+    while(1){
+        char partFile[1000]="";
+        sprintf(partFile, "%s.%d", newFile, count);
+        printf("%s\n",partFile);
+        if(strstr(path, partFile) == NULL) break;
+        count++;
+        remove(partFile);
+        sleep(2);
+    }
+        
+
+    // FILE *largeFile = fopen(newFile, "w"); 
+    // int count=0;
+    // while(strstr(path, newFile) != NULL && strcmp(path, newFile)){
+    //     char partFile[1000]="";
+    //     sprintf(partFile, "%s", strstr(path, newFile));
+    //     printf("%s\n", partFile);
+
+    //     FILE *smallFile = fopen(partFile, "r");
+    //     char c;  
+    //     while ((c = fgetc(smallFile)) != EOF) 
+    //         fputc(c, largeFile);
+    //     fclose(smallFile);
+    //     remove(partFile);
+    // }
+    // fclose(largeFile);
+    
+    // // Open file to store the result 
+    // FILE *fp6 = fopen("file3.py", "w"); 
+    // char c;  
+    
+    // // Copy contents of first file to file3.txt 
+    // while ((c = fgetc(fp1)) != EOF) 
+    //     fputc(c, fp6); 
+    
+    // // Copy contents of second file to file3.txt 
+    // while ((c = fgetc(fp2)) != EOF) 
+    //     fputc(c, fp6); 
+
+    //  // Copy contents of second file to file3.txt 
+    // while ((c = fgetc(fp3)) != EOF) 
+    //     fputc(c, fp6); 
+    
+    // while ((c = fgetc(fp4)) != EOF) 
+    //     fputc(c, fp6); 
+    
+    // while ((c = fgetc(fp5)) != EOF) 
+    //     fputc(c, fp6); 
+    
+    // fclose(fp1); 
+    // fclose(fp2); 
+    // fclose(fp3); 
+    // fclose(fp4); 
+    // fclose(fp5); 
+    // fclose(fp6);
 }
 
 long file_size(char *name){
@@ -77,14 +150,15 @@ void splitFile(char *path){
     int segments=0, i, accum;
     FILE *fp1, *fp2;
     
-    char *files = rindex(path, '/');
-    char *ext = rindex(files+1, '.');
-    ext++;
-    char *name = getName(files+1);
+    // char *files = rindex(path, '/');
+    // char *ext = rindex(files+1, '.');
+    // ext++;
+    // char *name = getName(files+1);
+    // printf("%s\n", files+1);
     // getPath(path, files+1);
 
     char filename[255];//base name for small files.
-    sprintf(filename, "%s_", path);
+    sprintf(filename, "%s", path);
     char largeFileName[255];//change to your path
     sprintf(largeFileName, "%s", path);
     
@@ -101,7 +175,7 @@ void splitFile(char *path){
         for(i=0;i<segments;i++)
         {
             accum = 0;
-            sprintf(smallFileName, "%s%d.%s", filename, i, ext);
+            sprintf(smallFileName, "%s.%d", filename, i);
             fp2 = fopen(smallFileName, "w");
             if(fp2)
             {
@@ -181,11 +255,6 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_
 
     else sprintf(fpath, "%s%s",dirpath,path);  
 
-    // if(strstr(fpath, "encv2_") != NULL) {
-    //     printf("hello\n");
-    // } 
-
-
     int res = 0;
     DIR *dp;
     struct dirent *de;
@@ -211,9 +280,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_
 
     closedir(dp);
     return 0;
-}
-
-  
+} 
 
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
 
@@ -224,9 +291,13 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset, stru
     }
     else sprintf(fpath, "%s%s",dirpath,path);
 
-    // printf("%s\n", fpath);
-
-    splitFile(fpath);
+    if(strstr(fpath, "encv2_") != NULL && strstr(fpath, ".Trash") == NULL) {
+        splitFile(fpath);
+        printf("splitfile\n");
+    }else if(strstr(fpath, ".Trash") == NULL){
+        combineFile(fpath);
+        printf("combinrfile\n");
+    }
 
     int res = 0;
     int fd = 0 ;
@@ -349,39 +420,3 @@ int  main(int  argc, char *argv[]){
     return fuse_main(argc, argv, &xmp_oper, NULL);
 }
 
-// void combineFile(char *path, char* filename){
-//     FILE *largeFile = fopen("file3.py", "w"); 
-//     int count=0;
-//     while(1){
-//         FILE *smallFile = open(path, "r");
-//     }
-    
-//     // Open file to store the result 
-//     FILE *fp6 = fopen("file3.py", "w"); 
-//     char c;  
-    
-//     // Copy contents of first file to file3.txt 
-//     while ((c = fgetc(fp1)) != EOF) 
-//         fputc(c, fp6); 
-    
-//     // Copy contents of second file to file3.txt 
-//     while ((c = fgetc(fp2)) != EOF) 
-//         fputc(c, fp6); 
-
-//      // Copy contents of second file to file3.txt 
-//     while ((c = fgetc(fp3)) != EOF) 
-//         fputc(c, fp6); 
-    
-//     while ((c = fgetc(fp4)) != EOF) 
-//         fputc(c, fp6); 
-    
-//     while ((c = fgetc(fp5)) != EOF) 
-//         fputc(c, fp6); 
-    
-//     fclose(fp1); 
-//     fclose(fp2); 
-//     fclose(fp3); 
-//     fclose(fp4); 
-//     fclose(fp5); 
-//     fclose(fp6);
-// }

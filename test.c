@@ -2,29 +2,55 @@
 #include <string.h>
 #include <stdlib.h>
 
+static const char *dirpath = "/home/hexa/Documents/testad.py";
+char temp[1000]="";
 
+void getPath(char *path, char *files){
+    char string[1000] = "";
+    strcpy(string, path);
+    char * token = strtok(string, "/");
+    // loop through the string to extract all other tokens
+    while(strcmp(token, files)) {
+        sprintf( temp, "%s/%s", temp, token); //printing each token
+        token = strtok(NULL, "/");
+    }
+}
 
 int main()
 {
-	char *aa = "/home/hexa/Documents/test.py";
-	char str[100];
-    strcpy(str, aa);
-    int init_size = strlen(str);
-	char delim[] = "/";
-    char result[1000] = "";
-    char *files = "test.py";
+    FILE *fp1 = fopen("/home/hexa/Documents/testad/env2_w/cmd.py.0", "r"); 
+    FILE *fp2 = fopen("/home/hexa/Documents/testad/env2_w/cmd.py.1", "r"); 
+    FILE *fp3 = fopen("/home/hexa/Documents/testad/env2_w/cmd.py.2", "r"); 
+    FILE *fp4 = fopen("/home/hexa/Documents/testad/env2_w/cmd.py.3", "r"); 
+    FILE *fp5 = fopen("/home/hexa/Documents/testad/env2_w/cmd.py.4", "r"); 
 
-	char *ptr = strtok(str, delim);
+    FILE *fp6 = fopen("/home/hexa/Documents/testad/env2_w/cmd.py", "w"); 
+    char c;  
+    
+    // Copy contents of first file to file3.txt 
+    while ((c = fgetc(fp1)) != EOF) 
+        fputc(c, fp6); 
+    
+    // Copy contents of second file to file3.txt 
+    while ((c = fgetc(fp2)) != EOF) 
+        fputc(c, fp6); 
 
-	while(strcmp(ptr, files))
-	{
-		sprintf(result, "%s/%s", result, ptr);
-		ptr = strtok(NULL, delim);
-    }   
+     // Copy contents of second file to file3.txt 
+    while ((c = fgetc(fp3)) != EOF) 
+        fputc(c, fp6); 
+    
+    while ((c = fgetc(fp4)) != EOF) 
+        fputc(c, fp6); 
+    
+    while ((c = fgetc(fp5)) != EOF) 
+        fputc(c, fp6); 
+    
+    fclose(fp1); 
+    fclose(fp2); 
+    fclose(fp3); 
+    fclose(fp4); 
+    fclose(fp5); 
+    fclose(fp6);
 
-    char *aaa="";
-    strcpy(aaa, result);
-    printf("%s\n", aaa);
-	
     return 0;
 }
