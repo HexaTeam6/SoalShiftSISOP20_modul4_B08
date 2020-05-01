@@ -170,7 +170,109 @@ Pada soal 1 ini kita diminta melakukan enkripsi versi 2 :
 * Metode enkripsi pada suatu direktori juga berlaku kedalam direktori lain yang ada didalam direktori tersebut (rekursif).
 
 ### Penyelesaian
+Berikut merupakan kode penyelesaian untuk soal nomer 2
+```
+void getPath(char *path, char *files, char temp[]){
+    char string[1000] = "";
+    strcpy(string, path);
+    char * token = strtok(string, "/");
+    while(strcmp(token, files)) {
+        sprintf( temp, "%s/%s", temp, token);
+        token = strtok(NULL, "/");
+    }
+}
 
+char *getName(char* myStr) {
+    char *retStr;
+    char *lastExt;
+    if (myStr == NULL) return NULL;
+    if ((retStr = malloc (strlen (myStr) + 1)) == NULL) return NULL;
+    strcpy (retStr, myStr);
+    lastExt = strrchr (retStr, '.');
+    if (lastExt != NULL)
+        *lastExt = '\0';
+    return retStr;
+}
+
+void combineFile(char *path){
+
+    char temp[1000]="";
+    char *files = rindex(path, '/');
+    char *ext = rindex(files+1, '.');
+    ext++;
+    char *name = getName(files+1);
+    char newFile[1000]="";
+    getPath(path, files+1, temp);
+
+    sprintf(newFile, "%s/%s", temp, name);
+
+    int count=4;
+    while(1){
+        char partFile[1000]="";
+        sprintf(partFile, "%s.%d", newFile, count);
+        printf("%s\n",partFile);
+        if(strstr(path, partFile) == NULL) break;
+        count++;
+        remove(partFile);
+        sleep(2);
+    }
+        
+}
+
+long file_size(char *name){
+    FILE *fp = fopen(name, "rb"); //must be binary read to get bytes
+
+    long size=-1;
+    if(fp)
+    {
+        fseek (fp, 0, SEEK_END);
+        size = ftell(fp)+1;
+        fclose(fp);
+    }
+    return size;
+}
+
+void splitFile(char *path){
+    int segments=0, i, accum;
+    FILE *fp1, *fp2;
+
+    char filename[255];//base name for small files.
+    sprintf(filename, "%s", path);
+    char largeFileName[255];//change to your path
+    sprintf(largeFileName, "%s", path);
+    
+    char smallFileName[255];
+    char line[1080];
+    long sizeFile = file_size(largeFileName);
+    segments = sizeFile/SEGMENT + 1;//ensure end of file
+    
+    if(sizeFile<=1080) return;
+
+    fp1 = fopen(largeFileName, "r");
+    if(fp1)
+    {
+        for(i=0;i<segments;i++)
+        {
+            accum = 0;
+            sprintf(smallFileName, "%s.%d", filename, i);
+            fp2 = fopen(smallFileName, "w");
+            if(fp2)
+            {
+                while(fgets(line, 1080, fp1) && accum <= SEGMENT)
+                {
+                    accum += strlen(line);//track size of growing file
+                    fputs(line, fp2);
+                }
+                fclose(fp2);
+            }
+        }
+        fclose(fp1);
+    }
+    remove(path);
+}
+```
+Fungsi ini digunakan untuk memisahkan sebuah file menjadi beberapa file dengan ukuran lebih kecil setelah sebuah folder dirubah
+menjadi `encv2_ ...`.
 
 ## SOAL 3
 Tanpa mengurangi keumuman, misalkan suatu directory bernama dir akan tersinkronisasi dengan directory yang memiliki nama yang sama 
