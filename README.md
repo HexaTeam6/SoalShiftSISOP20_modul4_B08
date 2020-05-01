@@ -11,6 +11,7 @@ Pada soal 1 ini kita diminta melakukan enkripsi versi 1 :
 * Apabila sebuah direktori terenkripsi di-rename menjadi tidak terenkripsi, maka isi adirektori tersebut akan terdekrip.
 * Setiap pembuatan direktori terenkripsi baru (mkdir ataupun rename) akan tercatat ke sebuah database/log berupa file.
 * Semua file yang berada dalam direktori ter enkripsi menggunakan caesar cipher dengan key.
+
   Key :
   ``` 
   9(ku@AW1[Lmvgax6q`5Y2Ry?+sF!^HKQiBXCUSe&0M.b%rI'7d)o4~VfZ*{#:}ETt$3J-zpc]lnh8,GwP_ND|jO 
@@ -18,7 +19,142 @@ Pada soal 1 ini kita diminta melakukan enkripsi versi 1 :
 * Metode enkripsi pada suatu direktori juga berlaku kedalam direktori lainnya yang ada didalamnya.
 
 ### Penyelesaian
+Berikut merupakan kode fungsi untuk melakukan enkripsi dan dekripsi.
+```
+int key = 10;
+char cipher[] = "9(ku@AW1[Lmvgax6q`5Y2Ry?+sF!^HKQiBXCUSe&0M.b%rI'7d)o4~VfZ*{#:}ETt$3J-zpc]lnh8,GwP_ND|jO";
 
+void encrypt(char *x) 
+{
+	int xlength = strlen(x), xbegin = 0;
+	int i;
+	for(i = strlen(x); i >= 0; i--) {
+		if(x[i] == '/') {
+			break;
+		}
+
+		if(x[i] == '.') {
+			xlength = i - 1;
+		}
+	}
+
+	for (int i = 1; i < xlength; i++)
+	{
+		if(x[i] == '/') {
+			xbegin = i;
+		}
+	}
+	
+	int ind;
+	char *ptr;
+	for(i = xbegin ; i < xlength; i++) {
+		if(x[i] == '/') {
+			continue;
+		}
+
+		ptr = strchr(cipher, x[i]);
+
+		if(ptr) 
+		{
+			ind = ptr - cipher;
+			x[i] = cipher[(ind + key) % strlen(cipher)];
+		}
+	}
+
+	// printf("hasil encrypt %s\n", x);
+}
+
+void decrypt(char *y) 
+{
+	// printf("sebelum %s\n", y);
+
+	int ylength = strlen(y), ybegin = 0;
+	int i;
+	
+	for (int i = 1; i < ylength; i++)
+	{
+		if(y[i] == '/' || y[i+1] == '\0') {
+			ybegin = i + 1;
+			break;
+		}
+	}
+
+	for(int i = strlen(y); i >= 0; i--) {
+		// printf("y[i] -> %c\n", y[i]);
+		if(y[i] == '/') {
+			break;
+		}
+		if(y[i] == '.' && i == (strlen(y)-1)) {
+			ylength = strlen(y);
+			break;
+		}
+		if(y[i] == '.' && i != (strlen(y)-1)) {
+			ylength = i - 1;
+			break;
+		}
+	}
+
+	int ind;
+	char *ptr;
+	for(i = ybegin ; i < ylength; i++) {
+		if(y[i] == '/') {
+			continue;
+		}
+		// printf("y masuk %c - ", y[i]);
+		ptr = strchr(cipher, y[i]);
+
+		if(ptr) 
+		{
+			ind = ptr - cipher - key;
+			if (ind < 0)
+			{
+				ind = ind + strlen(cipher);
+			}
+			y[i] = cipher[ind];
+		}
+		// printf("y keluar %c\n", y[i]);
+	}
+
+	// printf("hasil decrypt %s\n", y);
+}
+```
+
+Untuk melakukan enkripsi, kita perlu memanggil fungsi tersebut pada `xmp_readdir`
+```
+ while ((de = readdir(dp)) != NULL)
+{
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+    st.st_ino = de->d_ino;
+    st.st_mode = de->d_type << 12;
+
+    if(strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0) {
+      continue;
+    }
+
+    char temp[1000];
+    strcpy(temp, de->d_name);
+
+    if(strncmp(path, "/encv1_", 7) == 0) {
+      encrypt(temp);
+      // printf("encrypted d_name %s\n", temp);
+    }
+
+    // printf("%s - > %s\n", de->d_name, temp);
+
+    // res = (filler(buf, de->d_name, &st, 0));
+    res = (filler(buf, temp, &st, 0));
+
+    if (res != 0)
+        break;
+}
+```
+Setelah meng-enkripsi, kita perlu memanggil fungsi dekripsi pada setiap fungsi fuse
+```
+if(strncmp(path, "/encv1_", 7) == 0) {
+  decrypt(temppath);
+}
+```
 
 ## SOAL 2
 Pada soal 1 ini kita diminta melakukan enkripsi versi 2 :
@@ -84,4 +220,36 @@ INFO::200419-18:29:33::RENAME::/iz1/yena.jpg::/iz1/yena.jpeg
 ```
 
 ### Penyelesaian
+Untuk membuat log system, kita perlu membuat fungsi
+```
+void logs(int level, char* cmd, char* desc1, char* temp)
+{
+    char data[1000];
+    char lvl[100];
+    char desc2[1000];
 
+    FILE * fPtr;
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+    sprintf(lvl, level? "WARNING" : "INFO");
+    if(strcmp(temp,"")) sprintf(desc2, "::%s", temp);
+    
+    fPtr = fopen("/home/kresna/fs.log", "a");
+    sprintf(data, "%s::%d%d%d-%d:%d:%d::%s::%s%s\n", lvl, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, cmd, desc1, desc2);
+    
+    if(fPtr == NULL)
+    {
+        printf("Unable to create file.\n");
+        exit(EXIT_FAILURE);
+    }
+    fputs(data, fPtr);
+    fclose(fPtr);
+}
+```
+pada setiap fungsi fuse, kita hanya perlu memanggil fungsi tersebut dan memberikan parameter levelnya.
+
+Contoh :
+```
+logs(0, "RENAME", src, dst);
+```
