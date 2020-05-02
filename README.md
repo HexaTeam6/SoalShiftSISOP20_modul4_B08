@@ -288,7 +288,7 @@ Jika persyaratan di atas terlanggar, maka kedua directory tersebut tidak akan te
 Implementasi dilarang menggunakan symbolic *links* dan *thread*.
 
 ### Penyelesaian
-
+Belum selesai karena tidak paham dengan maksud soal dan cara penyelesaiannya.
 
 ## SOAL 4
 Pada soal ini kita diminta untuk membuat log system:
